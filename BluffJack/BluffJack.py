@@ -13,11 +13,13 @@ def turn(current):
         case 2:
             print(f"Arcana: {current[2]}")
             stands = 0
+            swordSearch(current, 3)
             turn(current)
         case 3:
             print("Stand")
             stands += 1
             if stands > 1:
+                current, other = other, current
                 end_round()
             else:
                 current, other = other, current
@@ -29,6 +31,7 @@ def turn(current):
 
 def end_round():
     a, b = current[1], other[1]
+    print(f"{current[3]} other {other[3]}")
     print(f"{current[3]}'s Score: {a} {other[3]}'s Score: {b}")
     winner = None
     if a == b:
@@ -62,6 +65,22 @@ def magician():
     other[0].append(a)
     tot()
 
+def coinSearch(player, num):
+    print(f"{num} of Coins: Search the deck for a {num}")
+    print("If found, add it to your hand")
+    if num not in player[0] and num not in other[0]:
+        player[0].append(num)
+        deck.remove(num)
+    tot()
+
+def swordSearch(player, num):
+    print(f"{num} of Swords: Search the deck for a {num}")
+    print("If found, add it to your opponent's hand")
+    if num not in player[0] and num not in other[0]:
+        other[0].append(num)
+        deck.remove(num)
+    tot()
+
 def devil(other):
     print("The Devil: Force the opponent to draw a card")
     draw(other, 1)
@@ -73,13 +92,17 @@ def tot():
     print(f"{current[3]}: {current}, {other[3]}: {other}")
 
 def draw(player, amount):
-    if len(deck) > 0:
-        for _ in range(amount):
-            drawn = random.choice(deck)
-            player[0].append(drawn)
-            deck.remove(drawn)
-    else:
-        print("Empty deck!")
+    if player[1] > goal:
+        print("Busted! You may not draw a card")
+        print(goal)
+    else: 
+        if len(deck) > 0:
+            for _ in range(amount):
+                drawn = random.choice(deck)
+                player[0].append(drawn)
+                deck.remove(drawn)
+        else:
+            print("Empty deck!")
     tot()
 
 if __name__ == "__main__":
