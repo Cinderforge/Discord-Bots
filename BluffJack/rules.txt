@@ -1,0 +1,6 @@
+21
+6
+1
+First Line: BlackJack Ceiling (Score before bust)
+Second Line: Starting health of each player
+Third Line: Starting life bet (How much health is on the line and will be lost that round)

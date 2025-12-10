@@ -1,63 +1,97 @@
 import random
+import os
+
+def clear():
+    # For Windows
+    if os.name == 'nt':
+        _ = os.system('cls')
+    # For macOS and Linux
+    else:
+        _ = os.system('clear')
+
+def check():
+    clear()
+    checker = ""
+    while len(checker) == 0:
+        checker = input(f"Screen facing {current[3]}? (Any Input): ")
 
 def turn():
     global stands, other, current
     print(f"{current[3]}'s turn")
+    print(f"Bet: {bet}, {current[3]}'s Health: {current[6]}, {other[3]}'s Health: {other[6]}")
     selftot()
-    decision = int(input("Draw, Use Ability, or Stay: "))
+    print(f"Goal: {goal}")
+    decision = (input("Draw (1), Use Ability (2), or Stay (3): "))
     match decision:
-        case 1:
+        case "1":
             print("Draw a Card")
             draw(current, 1)
             stands = 0
+            clear()
             turn()
-        case 2:
+        case "2":
             print(f"Arcana: {current[2]}")
             stands = 0
+            clear()
             turn()
-        case 3:
+        case "3":
             print("Stand")
             stands += 1
             if stands > 1:
                 current, other = other, current
+                clear()
                 end_round()
             else:
                 current, other = other, current
                 print(current, other)
+                check()
                 turn()
-        case 4:
-            sutot()
         case _:
             print("Invalid Input")
+            clear()
             turn()
 
 def end_round():
+    global bet
     a, b = current[1], other[1]
     print(f"{current[3]} other {other[3]}")
     print(f"{current[3]}'s Score: {a} {other[3]}'s Score: {b}")
     winner = None
     if a == b:
-        print("Tie")
+        print("Tie!")
     elif (a > goal) != (b > goal):
-        print("xor")
         winner = min(a, b)
     elif a > goal and b > goal:  
-        print("and") 
         winner = min(a, b)
     else:
-        print("else")
         winner = max(a, b)
     if a == winner:
-        print(f"{current[3]} wins")
+        print(f"{current[3]} wins!")
+        current[6] += bet
+        other[6] -= bet
     elif b == winner:
-        print(f"{other[3]} wins")
+        print(f"{other[3]} wins!")
+        current[6] -= bet
+        other[6] += bet
+    if current[6] <= 0 or other [6] <= 0:
+        if current[6] > 0:
+            print(f"{current[3]} Survives! Sorry {other[3]}, you must die.")
+        else:
+            print(f"{other[3]} Survives! Sorry {current[3]}, you must die.")
+    else:
+        print(f"Bet Increase!: {bet} --> {bet + 1}")
+        bet += 1
+        print(f"Bet: {bet}, {current[3]}'s Health: {current[6]}, {other[3]}'s Health: {other[6]}")
+        fool(current)
+        fool(other)
+        turn()
 
 def fool(player):
     print("The Fool: Resets your hand")
     for i in player:
         deck.append(i)
     player[0], player[1] = [], 0
-    draw(player, 2)
+    moon(player, 2)
     tot()
 
 def magician():
@@ -137,7 +171,6 @@ def tot():
     current[5] = sum(current[4])
     other[5] = sum(other[4])
     print(f"{current[3]}: {current[4]} {current[5]}, {other[3]}: {other[4]} {other[5]}")
-    
 
 def draw(player, amount):
     if player[1] > goal:
@@ -155,14 +188,27 @@ def draw(player, amount):
     tot()
 
 if __name__ == "__main__":
+    with open('rules.txt', 'r') as rules:
+        counter = 1
+        for line in rules:
+            line = line.strip()
+            if counter == 1:
+                goal = int(line)
+                counter += 1
+            elif counter == 2:
+                life = int(line)
+                counter += 1
+            elif counter == 3:
+                bet = int(line)
+                counter += 1
     deck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     tarot = [fool, magician, empress, emperor, devil, moon]
-    player1, player2 = [[], 0, [], "Player 1", [], 0], [[], 0, [], "Player 2", [], 0]
+    player1, player2 = [[], 0, [], "Player 1", [], 0, life], [[], 0, [], "Player 2", [], 0, life]
     current = random.choice([player1, player2])
     other = player1 if current is player2 else player2
     stands = 0
-    goal = 21
     moon(current, 2)
     moon(other, 2)
     tot()
+    check()
     turn()
