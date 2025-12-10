@@ -52,7 +52,7 @@ def turn():
             turn()
 
 def end_round():
-    global bet
+    global bet, stands
     a, b = current[1], other[1]
     print(f"{current[3]} other {other[3]}")
     print(f"{current[3]}'s Score: {a} {other[3]}'s Score: {b}")
@@ -84,6 +84,7 @@ def end_round():
         print(f"Bet: {bet}, {current[3]}'s Health: {current[6]}, {other[3]}'s Health: {other[6]}")
         fool(current)
         fool(other)
+        stands = 0
         turn()
 
 def fool(player):
