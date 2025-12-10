@@ -88,9 +88,10 @@ def end_round():
 
 def fool(player):
     print("The Fool: Resets your hand")
-    for i in player:
+    for i in player[0]:
         deck.append(i)
     player[0], player[1] = [], 0
+    player[4], player[5]= [], 0
     moon(player, 2)
     tot()
 
