@@ -1,11 +1,36 @@
 import random
 import os
+import matplotlib.pyplot as plt
+
+time_steps = []
+p1_scores = []
+p2_scores = []
+event_counter = 0
+
+def record_scores():
+    global event_counter
+    event_counter += 1
+    time_steps.append(event_counter)
+    p1_scores.append(player1[1])
+    p2_scores.append(player2[1])
+
+def plot_scores():
+    plt.figure(figsize=(8, 5))
+    plt.plot(time_steps, p1_scores, marker='o', label='Player 1')
+    plt.plot(time_steps, p2_scores, marker='s', label='Player 2')
+    plt.xlabel('Event number')
+    plt.ylabel('Score total')
+    plt.title('Player scores over time')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
 def clear():
     # For Windows
     if os.name == 'nt':
         _ = os.system('cls')
-    # For macOS and Linux
+    # For mac and Linux
     else:
         _ = os.system('clear')
 
@@ -31,6 +56,7 @@ def turn():
             turn()
         case "2":
             print(f"Arcana: {current[2]}")
+            print("Sorry, Planned Update")
             stands = 0
             clear()
             turn()
@@ -73,18 +99,23 @@ def end_round():
         print(f"{other[3]} wins!")
         current[6] -= bet
         other[6] += bet
-    if current[6] <= 0 or other [6] <= 0:
+    if current[6] <= 0 or other[6] <= 0:
         if current[6] > 0:
             print(f"{current[3]} Survives! Sorry {other[3]}, you must die.")
         else:
             print(f"{other[3]} Survives! Sorry {current[3]}, you must die.")
+        plot_scores()
     else:
         print(f"Bet Increase!: {bet} --> {bet + 1}")
         bet += 1
+        record_scores()
         print(f"Bet: {bet}, {current[3]}'s Health: {current[6]}, {other[3]}'s Health: {other[6]}")
+        _ = input("Ready? (Any Key): ")
+        clear()
         fool(current)
         fool(other)
         stands = 0
+        clear()
         turn()
 
 def fool(player):
@@ -188,6 +219,7 @@ def draw(player, amount):
         else:
             print("Empty deck!")
     tot()
+    record_scores()
 
 if __name__ == "__main__":
     with open('rules.txt', 'r') as rules:
@@ -212,5 +244,6 @@ if __name__ == "__main__":
     moon(current, 2)
     moon(other, 2)
     tot()
+    record_scores()
     check()
     turn()
