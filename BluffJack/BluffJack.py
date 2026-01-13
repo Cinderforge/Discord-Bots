@@ -1,249 +1,130 @@
+import discord
+from discord.ext import commands
 import random
+from dotenv import load_dotenv
 import os
-import matplotlib.pyplot as plt
 
-time_steps = []
-p1_scores = []
-p2_scores = []
-event_counter = 0
+load_dotenv()
+TOKEN = os.getenv('TOKEN')
 
-def record_scores():
-    global event_counter
-    event_counter += 1
-    time_steps.append(event_counter)
-    p1_scores.append(player1[1])
-    p2_scores.append(player2[1])
+intents = discord.Intents.default()
+intents.message_content = True  # also enable this in the Developer Portal
+bot = commands.Bot(command_prefix='$', intents=intents)
 
-def plot_scores():
-    plt.figure(figsize=(8, 5))
-    plt.plot(time_steps, p1_scores, marker='o', label='Player 1')
-    plt.plot(time_steps, p2_scores, marker='s', label='Player 2')
-    plt.xlabel('Event number')
-    plt.ylabel('Score total')
-    plt.title('Player scores over time')
-    plt.grid(True, linestyle='--', alpha=0.5)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+class player():
+    def __init__(self, player, health): 
+        self.player = player
+        self.health = health
+        self.health, self.hand, self.hidden, self.tarot, self.psum, self.hsum= 0 , [], [], [], 0, 0
+    def sum(self):
+        self.psum = sum(self.hand)
+        self.hsum = sum(self.hidden)
 
-def clear():
-    # For Windows
-    if os.name == 'nt':
-        _ = os.system('cls')
-    # For mac and Linux
-    else:
-        _ = os.system('clear')
 
-def check():
-    clear()
-    checker = ""
-    while len(checker) == 0:
-        checker = input(f"Screen facing {current[3]}? (Any Input): ")
-
-def turn():
-    global stands, other, current
-    print(f"{current[3]}'s turn")
-    print(f"Bet: {bet}, {current[3]}'s Health: {current[6]}, {other[3]}'s Health: {other[6]}")
-    selftot()
-    print(f"Goal: {goal}")
-    decision = (input("Draw (1), Use Ability (2), or Stay (3): "))
-    match decision:
-        case "1":
-            print("Draw a Card")
-            draw(current, 1)
-            stands = 0
-            clear()
-            turn()
-        case "2":
-            print(f"Arcana: {current[2]}")
-            print("Sorry, Planned Update")
-            stands = 0
-            clear()
-            turn()
-        case "3":
-            print("Stand")
-            stands += 1
-            if stands > 1:
-                current, other = other, current
-                clear()
-                end_round()
-            else:
-                current, other = other, current
-                print(current, other)
-                check()
-                turn()
-        case _:
-            print("Invalid Input")
-            clear()
-            turn()
-
-def end_round():
-    global bet, stands
-    a, b = current[1], other[1]
-    print(f"{current[3]} other {other[3]}")
-    print(f"{current[3]}'s Score: {a} {other[3]}'s Score: {b}")
-    winner = None
-    if a == b:
-        print("Tie!")
-    elif (a > goal) != (b > goal):
-        winner = min(a, b)
-    elif a > goal and b > goal:  
-        winner = min(a, b)
-    else:
-        winner = max(a, b)
-    if a == winner:
-        print(f"{current[3]} wins!")
-        current[6] += bet
-        other[6] -= bet
-    elif b == winner:
-        print(f"{other[3]} wins!")
-        current[6] -= bet
-        other[6] += bet
-    if current[6] <= 0 or other[6] <= 0:
-        if current[6] > 0:
-            print(f"{current[3]} Survives! Sorry {other[3]}, you must die.")
-        else:
-            print(f"{other[3]} Survives! Sorry {current[3]}, you must die.")
-        plot_scores()
-    else:
-        print(f"Bet Increase!: {bet} --> {bet + 1}")
-        bet += 1
-        record_scores()
-        print(f"Bet: {bet}, {current[3]}'s Health: {current[6]}, {other[3]}'s Health: {other[6]}")
-        _ = input("Ready? (Any Key): ")
-        clear()
-        fool(current)
-        fool(other)
-        stands = 0
-        clear()
-        turn()
-
-def fool(player):
-    print("The Fool: Resets your hand")
-    for i in player[0]:
-        deck.append(i)
-    player[0], player[1] = [], 0
-    player[4], player[5]= [], 0
-    moon(player, 2)
-    tot()
-
-def magician():
-    print("The Magician: Swaps last drawn card from each player")
-    a, b = current[0][-1], other[0][-1]
-    print(a, b)
-    del current[0][-1]
-    del other[0][-1]
-    del current[4][-1]
-    del other[4][-1]
-    current[0].append(b)
-    other[0].append(a)
-    current[4].append(b)
-    other[4].append(a)
-    tot()
-
-def empress():
-    global goal
-    print("The Empress: Set the bust limit to 17")
-    goal = 17
-
-def emperor():
-    global goal
-    print("The Emperor: Set the bust limit to 27")
-    goal = 27
-
-def coinSearch(player, num):
-    print(f"{num} of Coins: Search the deck for a {num}")
-    print("If found, add it to your hand")
-    if num not in player[0] and num not in other[0]:
-        player[0].append(num)
-        deck.remove(num)
-    tot()
-
-def swordSearch(player, num):
-    print(f"{num} of Swords: Search the deck for a {num}")
-    print("If found, add it to your opponent's hand")
-    if num not in player[0] and num not in other[0]:
-        other[0].append(num)
-        deck.remove(num)
-    tot()
-
-def devil(other):
-    print("The Devil: Force the opponent to draw a card")
-    draw(other, 1)
-
-def moon(player, amount):
-    print("The Moon: Draw a hidden card")
-    if len(deck) > 0:
-        for _ in range(amount):
-            drawn = random.choice(deck)
-            player[0].append(drawn)
-            player[4].append(0)
-            deck.remove(drawn)
-    else:
-        print("Empty deck!")
-    
-def sun():
-    print("The Sun: Reveals the opponent's hidden cards")
-    other[4] = other[0]
-
-def sutot():
-    current[1] = sum(current[0])
-    other[1] = sum(other[0])
-    current[5] = sum(current[4])
-    other[5] = sum(other[4])
-    print(f"Deck: {deck}")
-    print(f"{current[3]}: {current}, {other[3]}: {other}")
-
-def selftot():
-    print(f"{current[3]}: {current[0]} {current[1]}")
-    print(f"{other[3]}: {other[4]} ?+{other[5]}")
-
-def tot():
-    current[1] = sum(current[0])
-    other[1] = sum(other[0])
-    current[5] = sum(current[4])
-    other[5] = sum(other[4])
-    print(f"{current[3]}: {current[4]} {current[5]}, {other[3]}: {other[4]} {other[5]}")
-
-def draw(player, amount):
-    if player[1] > goal:
-        print("Busted! You may not draw a card")
-        print(goal)
-    else: 
-        if len(deck) > 0:
-            for _ in range(amount):
-                drawn = random.choice(deck)
-                player[0].append(drawn)
-                player[4].append(drawn)
-                deck.remove(drawn)
-        else:
-            print("Empty deck!")
-    tot()
-    record_scores()
-
-if __name__ == "__main__":
-    with open('rules.txt', 'r') as rules:
-        counter = 1
-        for line in rules:
-            line = line.strip()
-            if counter == 1:
-                goal = int(line)
-                counter += 1
-            elif counter == 2:
-                life = int(line)
-                counter += 1
-            elif counter == 3:
-                bet = int(line)
-                counter += 1
+class game():
+    p1deck = []
+    p2deck = [] 
+    p1hidden = []
+    p2hidden = []
+    currenplayer = None  
+    goal = 21
+    gameEmbed = discord.Embed
     deck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-    tarot = [fool, magician, empress, emperor, devil, moon]
-    player1, player2 = [[], 0, [], "Player 1", [], 0, life], [[], 0, [], "Player 2", [], 0, life]
-    current = random.choice([player1, player2])
-    other = player1 if current is player2 else player2
-    stands = 0
-    moon(current, 2)
-    moon(other, 2)
-    tot()
-    record_scores()
-    check()
-    turn()
+
+    def draw(self, player, amount):
+        if player.psum > self.goal:
+            print("Busted! You may not draw a card")
+            print(self.goal)
+        else: 
+            if len(self.deck) > 0:
+                for _ in range(amount):
+                    drawn = random.choice(self.deck)
+                    player.hand.append(drawn)
+                    if len(player.hidden) > 1:
+                        player.hidden.append(0)
+                    else:
+                        player.hidden.append(drawn)
+                    self.deck.remove(drawn)
+            else:
+                print("Empty deck!")
+        player.sum()
+    def build_embed(self) -> discord.Embed:
+        embed = discord.Embed(
+            title="Bluff Challenge",
+            description=str(self.deck),
+            color=discord.Color.blurple()
+        )
+        embed.add_field(name=self.p1.player, value=self.p1.hand, inline=True)
+        embed.add_field(name=self.p2.player, value=self.p2.hand, inline=True)
+        embed.add_field(name="\u000b", value="\u000b", inline=False)
+        embed.add_field(name="Hand", value=self.p1.hidden, inline=True)
+        embed.add_field(name="Hand", value=self.p2.hidden, inline=True)
+        embed.set_footer(text=f"{self.p1.player} vs {self.p2.player}")
+        return embed
+    def __init__(self, play1, play2, starthp): # health, bet
+        self.starthp = starthp
+        self.p1, self.p2 = player(play1, starthp), player(play2, starthp)
+        players = [self.p1, self.p2]
+        print(self.p1)
+        for i in players:
+            self.draw(i, 2)
+        self.gameEmbed = self.build_embed()
+        self.currenplayer = self.p1
+        self.otherplayer = self.p2
+
+
+#instancex = game("me", "you")
+#playerx = player(instancex.p1)
+#playery = player(instancex.p2)
+#playerx.health = instancex.p1health
+
+class PlayView(discord.ui.View):
+    def __init__(self, board):
+        super().__init__(timeout=None)
+        self.board = board 
+    @discord.ui.button(label="Hit", style=discord.ButtonStyle.green)
+    async def on_accept_click(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.board.draw(self.board.currenplayer, 1)
+        await interaction.response.edit_message(embed=self.board.build_embed(), view=self)
+    @discord.ui.button(label="Stand", style=discord.ButtonStyle.red)
+    async def on_deny_click(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.board.currenplayer, self.board.otherplayer = self.board.otherplayer, self.board.currenplayer
+        await interaction.response.edit_message(embed=self.board.build_embed(), view=self)
+
+class AcceptView(discord.ui.View):
+    # This button will have a red style and the label "Click Me!"
+
+    def __init__(self, play1, play2):
+        super().__init__(timeout=None)
+        self.player1, self.player2 = play1, play2
+        print(self.player1)
+
+    @discord.ui.button(label="Accept", style=discord.ButtonStyle.blurple)
+    async def on_accept_click(self, interaction: discord.Interaction, button: discord.ui.Button):
+        board = game(self.player1, self.player2, 7)
+        playbuttons = PlayView(board)
+        await interaction.response.edit_message(embed=board.gameEmbed, view=playbuttons)
+    @discord.ui.button(label="Deny", style=discord.ButtonStyle.red)
+    async def on_deny_click(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Callback fself.player1,self.player2unction for the button click."""
+        # Acknowledge the interaction and edit the mesboard.gameEmbed        await interaction.response.edit_message(content="Button clicked!", embed=None, view=None)
+
+      
+@bot.group(invoke_without_command=True)
+async def bluff(ctx):
+    await ctx.send('hello')
+
+
+@bluff.command()
+async def duel(ctx, target: discord.Member):
+    author = ctx.author
+    embed = discord.Embed(
+    title="Bluff Challenge",
+    description=f"{author.mention} has challenged {target.mention}!",
+    color=discord.Color.blurple()
+)
+    embed.set_footer(text=f"{author} vs {target}")
+    accept = AcceptView(author,target)
+    await ctx.send(embed=embed, view=accept) 
+
+bot.run(TOKEN)
