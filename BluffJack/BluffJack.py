@@ -1,3 +1,4 @@
+from itertools import count
 import discord
 from discord.ext import commands
 import random
@@ -71,6 +72,8 @@ class game():
         self.currenplayer.hand = []
         self.currenplayer.hidden = []
         self.currenplayer.sum()
+        self.currenplayer.draw(self.currenplayer, 2)
+        
     def __init__(self, play1, play2, starthp): # health, bet
         self.starthp = starthp
         self.p1, self.p2 = player(play1, starthp), player(play2, starthp)
@@ -106,20 +109,30 @@ class PlayView(discord.ui.View):
         await interaction.response.send_message(embed=None, view=view, ephemeral=True)
     @discord.ui.button(label="Debug", style=discord.ButtonStyle.blurple)
     async def on_debug_click(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.board.currenplayer.tarot.append(("Test Arcana","A powerful spell."))
-        self.board.currenplayer.tarot.append(("Test Arcana2","A weak spell."))
+        self.board.currenplayer.tarot.append(["Test Arcana","A powerful spell.",3])
+        self.board.currenplayer.tarot.append(["Test Arcana2","A weak spell.",1])
         await interaction.response.send_message(content="spawning test arcana",ephemeral=True)
 
 class ArcanaView(discord.ui.View):  
-    def build_dropdown(self, options: list[tuple[str, str]]):
+    def build_dropdown(self, optionsinp: list[list[str, str,int]]):
         dropdown = discord.ui.Select(
             placeholder="Choose an option...",
             options=[
-                discord.SelectOption(label=label, description=desc)
-                for label, desc in options
+                discord.SelectOption(label=f"{label} [x{tarotcount}]", description=desc)
+                for label, desc, tarotcount in optionsinp
             ],
         )
         return dropdown
+    def listcomp(self, inv: list):
+        self.templist = []
+        self.templist2 = []
+        for i in range (len(inv)):
+            if inv[i][0] in self.templist2:
+                self.templist[self.templist2.index(inv[i][0])][2] += 1
+            else:   
+                self.templist.append(inv[i])
+                self.templist2.append(inv[i][0])
+        inv = self.templist
     def __init__(self, tarotinv):
         super().__init__(timeout=None)
         dropdown = self.build_dropdown(tarotinv)
