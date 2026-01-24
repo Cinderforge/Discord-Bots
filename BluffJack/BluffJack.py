@@ -106,6 +106,7 @@ class PlayView(discord.ui.View):
     @discord.ui.button(label="Arcana", style=discord.ButtonStyle.blurple)
     async def on_arcana_click(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = ArcanaView(self.board.currenplayer.tarot)
+        self.board.currenplayer.tarot = view.newlist
         await interaction.response.send_message(embed=None, view=view, ephemeral=True)
     @discord.ui.button(label="Debug", style=discord.ButtonStyle.blurple)
     async def on_debug_click(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -115,6 +116,8 @@ class PlayView(discord.ui.View):
 
 class ArcanaView(discord.ui.View):  
     def build_dropdown(self, optionsinp: list[list[str, str,int]]):
+        optionsinp = self.listcomp(optionsinp)
+
         dropdown = discord.ui.Select(
             placeholder="Choose an option...",
             options=[
@@ -124,20 +127,22 @@ class ArcanaView(discord.ui.View):
         )
         return dropdown
     def listcomp(self, inv: list):
-        self.templist = []
-        self.templist2 = []
+        self.newlist = []
+        self.namelist = []
         for i in range (len(inv)):
-            if inv[i][0] in self.templist2:
-                self.templist[self.templist2.index(inv[i][0])][2] += 1
+            if inv[i][0] in self.namelist:
+                self.newlist[self.namelist.index(inv[i][0])][2] += inv[i][2]
             else:   
-                self.templist.append(inv[i])
-                self.templist2.append(inv[i][0])
-        inv = self.templist
+                self.newlist.append(inv[i])
+                self.namelist.append(inv[i][0])
+        inv = self.newlist
+        return inv
     def __init__(self, tarotinv):
         super().__init__(timeout=None)
         dropdown = self.build_dropdown(tarotinv)
         dropdown.callback = self.select_callback
         self.add_item(dropdown)
+
         
     async def select_callback(self, select, interaction): # the function called when the user is done selecting options
         await interaction.response.send_message(f"Invoking {select.values[0]}.")
