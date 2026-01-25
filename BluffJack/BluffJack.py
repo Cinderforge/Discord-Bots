@@ -17,17 +17,13 @@ class player():
     def __init__(self, player, health): 
         self.player = player
         self.health = health
-        self.health, self.hand, self.hidden, self.tarot, self.psum, self.hsum= 0 , [], [], [], 0, 0
+        self.hand, self.hidden, self.tarot, self.psum, self.hsum= [], [], [], 0, 0
     def sum(self):
         self.psum = sum(self.hand)
         self.hsum = sum(self.hidden)
 
 
 class game():
-    p1deck = []
-    p2deck = [] 
-    p1hidden = []
-    p2hidden = []
     currenplayer = player  
     goal = 21
     gameEmbed = discord.Embed
@@ -66,6 +62,36 @@ class game():
         embed.add_field(name="Hand", value=self.p2.hidden, inline=True)
         embed.set_footer(text=f"Turn {self.turn} | Bet {self.currenbet} | {self.currenplayer.player}'s turn")
         return embed
+
+    def endround(self):
+        a, b = self.currenplayer.psum, self.otherplayer.psum
+        print(f"{self.currenplayer.player} other {self.otherplayer.player}")
+        print(f"{self.currenplayer.player}'s Score: {self.currenplayer.psum} {self.otherplayer.player}'s Score: {self.otherplayer.psum}")
+        winner = None
+        if self.currenplayer.psum == self.otherplayer.psum:
+            print("Tie!")
+        elif (self.currenplayer.psum > self.goal) != (self.otherplayer.psum > self.goal):
+            winner = min(self.currenplayer.psum, self.otherplayer.psum)
+        elif self.currenplayer.psum > self.goal and self.otherplayer.psum > self.goal:  
+            winner = min(self.currenplayer.psum, self.otherplayer.psum)
+        else:
+            winner = max(self.currenplayer.psum, self.otherplayer.psum)
+        if self.currenplayer.psum == winner:
+            print(f"{self.currenplayer.player} wins!")
+            self.currenplayer.health += self.currenbet
+            self.otherplayer.health -= self.currenbet
+        elif self.otherplayer.psum == winner:
+            print(f"{self.otherplayer.player} wins!")
+            self.otherplayer.health += self.currenbet
+            self.currenplayer.health -= self.currenbet
+        if self.currenplayer.health <= 0:
+            print(f"{self.otherplayer.player} has won!")
+        elif self.otherplayer.health <= 0:
+            print(f"{self.currenplayer.player} has won!")
+        self.standcount = 0
+        self.currenbet += 1
+        self.turn += 1
+
     def fool(self):
         for i in self.currenplayer.hand:
             self.deck.append(i)
@@ -76,7 +102,7 @@ class game():
         
     def __init__(self, play1, play2, starthp): # health, bet
         self.starthp = starthp
-        self.p1, self.p2 = player(play1, starthp), player(play2, starthp)
+        self.p1, self.p2 = player(play1, self.starthp), player(play2, self.starthp)
         players = [self.p1, self.p2]
         print(self.p1)
         for i in players:
@@ -97,11 +123,9 @@ class PlayView(discord.ui.View):
     @discord.ui.button(label="Stand", style=discord.ButtonStyle.red)
     async def on_stand_click(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.board.currenplayer, self.board.otherplayer = self.board.otherplayer, self.board.currenplayer
-        self.board.turn += 1
         self.board.standcount += 1
         if self.board.standcount >=2:
-            #resolve round
-            pass
+            self.board.endround()
         await interaction.response.edit_message(embed=self.board.build_embed(), view=self)
     @discord.ui.button(label="Arcana", style=discord.ButtonStyle.blurple)
     async def on_arcana_click(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -142,8 +166,6 @@ class ArcanaView(discord.ui.View):
         dropdown = self.build_dropdown(tarotinv)
         dropdown.callback = self.select_callback
         self.add_item(dropdown)
-
-        
     async def select_callback(self, select, interaction): # the function called when the user is done selecting options
         await interaction.response.send_message(f"Invoking {select.values[0]}.")
     
